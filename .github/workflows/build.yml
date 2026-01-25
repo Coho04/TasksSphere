@@ -1,0 +1,93 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  preparation:
+    runs-on: ubuntu-latest
+    container: lorisleiva/laravel-docker:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        run: php -v
+      - name: Install Composer dependencies
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress --no-scripts
+          cp .env.example .env
+          php artisan key:generate
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+      - name: Install npm dependencies
+        run: |
+          npm --version
+          npm ci
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+  building:
+    needs: preparation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '14'
+      - name: Install npm dependencies
+        run: npm install
+      - name: Build the project
+        run: npm run build
+
+  db-seeding:
+    needs: preparation
+    container: lorisleiva/laravel-docker:latest
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:latest
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mysql_db
+        ports:
+          - 3306:3306
+    steps:
+      - uses: actions/checkout@v4
+      - name: Composer install
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress --no-scripts
+          cp .env.example .env
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=mysql" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=mysql_db" >> .env
+          echo "DB_USERNAME=root" >> .env
+          echo "DB_PASSWORD=root" >> .env
+          php artisan key:generate
+      - name: Wait for MySQL
+        run: |
+          until nc -z mysql 3306; do
+           echo "Waiting for MySQL..."
+           sleep 1
+          done
+      - name: Seed database
+        run: |
+          mysql --version
+          php artisan migrate:fresh --seed --force

@@ -1,0 +1,265 @@
+<?php
+
+namespace App\Livewire;
+
+use App\Models\Task;
+use Livewire\Component;
+use Illuminate\Support\Facades\Auth;
+
+class TaskManager extends Component
+{
+    public $title;
+    public $description;
+    public $due_at;
+    public $frequency = 'none';
+    public $interval = 1;
+    public $times = [];
+    public $weekdays = [];
+    public $newTime = '';
+    public $editingTask = null;
+    public $isEditing = false;
+    public $showForm = false;
+    public $confirmingTaskDeletion = false;
+    public $deletionTaskId = null;
+    public $deletionPlannedAt = null;
+
+    protected $rules = [
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'due_at' => 'nullable|date',
+        'frequency' => 'required|in:none,hourly,daily,weekly,monthly',
+        'interval' => 'required|integer|min:1',
+        'weekdays' => 'nullable|array',
+    ];
+
+    public function addTime()
+    {
+        $this->validate([
+            'newTime' => 'required|regex:/^[0-2][0-9]:[0-5][0-9]$/',
+        ]);
+
+        if (!in_array($this->newTime, $this->times)) {
+            $this->times[] = $this->newTime;
+            sort($this->times);
+        }
+        $this->newTime = '';
+    }
+
+    public function removeTime($index)
+    {
+        unset($this->times[$index]);
+        $this->times = array_values($this->times);
+    }
+
+    public function render()
+    {
+        $allTasks = Auth::user()->tasks()
+            ->where('is_archived', false)
+            ->where(function($query) {
+                $query->whereNull('completed_at')
+                      ->orWhereNotNull('recurrence_rule');
+            })
+            ->get();
+
+        $occurrences = collect();
+        $start = now()->startOfDay();
+        $end = now()->addDays(7)->endOfDay();
+
+        foreach ($allTasks as $task) {
+            $occurrences = $occurrences->merge($task->getOccurrences($start, $end));
+        }
+
+        // Sort by planned_at
+        $occurrences = $occurrences->sortBy('planned_at');
+
+        $completedCompletions = \App\Models\TaskCompletion::with('task')
+            ->where('is_skipped', false)
+            ->orderBy('completed_at', 'desc')
+            ->take(10)
+            ->get();
+
+        // Count active occurrences for today
+        $todayCount = $occurrences->filter(fn($o) => !$o['is_completed'] && $o['planned_at'] && $o['planned_at']->isToday())->count();
+
+        return view('livewire.task-manager', [
+            'tasks' => $allTasks,
+            'occurrences' => $occurrences,
+            'todayCount' => $todayCount,
+            'completedCompletions' => $completedCompletions,
+        ]);
+    }
+
+    public function showCreateForm()
+    {
+        $this->cancelEdit();
+        $this->showForm = true;
+    }
+
+    public function createTask()
+    {
+        $this->validate();
+
+        $recurrence_rule = null;
+        if ($this->frequency !== 'none') {
+            $recurrence_rule = [
+                'frequency' => $this->frequency,
+                'interval' => (int)$this->interval,
+                'times' => $this->times,
+                'weekdays' => $this->frequency === 'weekly' ? $this->weekdays : [],
+            ];
+        }
+
+        $dueAt = $this->due_at;
+        if (!$dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
+            $dueAt = now()->toDateTimeString();
+        }
+
+        if ($dueAt) {
+            $date = \Illuminate\Support\Carbon::parse($dueAt);
+            if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
+                if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
+                    $limit = 7;
+                    while (!in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
+                        $date->addDay();
+                        $limit--;
+                    }
+                }
+            }
+            if ($this->frequency !== 'none' && !empty($this->times)) {
+                sort($this->times);
+                [$hour, $minute] = explode(':', $this->times[0]);
+                $date->setTime((int)$hour, (int)$minute);
+            }
+            $dueAt = $date->toDateTimeString();
+        }
+
+        Auth::user()->tasks()->create([
+            'title' => $this->title,
+            'description' => $this->description,
+            'due_at' => $dueAt,
+            'recurrence_rule' => $recurrence_rule,
+        ]);
+
+        $this->reset(['title', 'description', 'due_at', 'frequency', 'interval', 'times', 'weekdays', 'newTime', 'showForm']);
+    }
+
+    public function editTask($taskId)
+    {
+        $task = Auth::user()->tasks()->findOrFail($taskId);
+        $this->editingTask = $task;
+        $this->title = $task->title;
+        $this->description = $task->description;
+        $this->due_at = $task->due_at ? $task->due_at->format('Y-m-d\TH:i') : null;
+        
+        if ($task->isRecurring()) {
+            $this->frequency = $task->recurrence_rule['frequency'];
+            $this->interval = $task->recurrence_rule['interval'];
+            $this->times = $task->recurrence_rule['times'] ?? [];
+            $this->weekdays = $task->recurrence_rule['weekdays'] ?? [];
+        } else {
+            $this->frequency = 'none';
+            $this->interval = 1;
+            $this->times = [];
+            $this->weekdays = [];
+        }
+
+        $this->isEditing = true;
+    }
+
+    public function updateTask()
+    {
+        $this->validate();
+
+        $task = Auth::user()->tasks()->findOrFail($this->editingTask->id);
+
+        $recurrence_rule = null;
+        if ($this->frequency !== 'none') {
+            $recurrence_rule = [
+                'frequency' => $this->frequency,
+                'interval' => (int)$this->interval,
+                'times' => $this->times,
+                'weekdays' => $this->frequency === 'weekly' ? $this->weekdays : [],
+            ];
+        }
+
+        $dueAt = $this->due_at;
+        if (!$dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
+            $dueAt = now()->toDateTimeString();
+        }
+
+        if ($dueAt) {
+            $date = \Illuminate\Support\Carbon::parse($dueAt);
+            if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
+                if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
+                    $limit = 7;
+                    while (!in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
+                        $date->addDay();
+                        $limit--;
+                    }
+                }
+            }
+            if ($this->frequency !== 'none' && !empty($this->times)) {
+                sort($this->times);
+                [$hour, $minute] = explode(':', $this->times[0]);
+                $date->setTime((int)$hour, (int)$minute);
+            }
+            $dueAt = $date->toDateTimeString();
+        }
+
+        $task->update([
+            'title' => $this->title,
+            'description' => $this->description,
+            'due_at' => $dueAt,
+            'recurrence_rule' => $recurrence_rule,
+        ]);
+
+        $this->cancelEdit();
+    }
+
+    public function cancelEdit()
+    {
+        $this->reset(['title', 'description', 'due_at', 'frequency', 'interval', 'times', 'weekdays', 'newTime', 'isEditing', 'editingTask', 'showForm']);
+    }
+
+    public function completeTask($taskId, $plannedAt = null)
+    {
+        $task = Auth::user()->tasks()->findOrFail($taskId);
+        $task->complete($plannedAt);
+    }
+
+    public function deleteTask($taskId, $plannedAt = null)
+    {
+        $task = Auth::user()->tasks()->findOrFail($taskId);
+        
+        if ($task->isRecurring() && $plannedAt) {
+            $this->deletionTaskId = $taskId;
+            $this->deletionPlannedAt = $plannedAt;
+            $this->confirmingTaskDeletion = true;
+        } else {
+            $task->delete();
+        }
+    }
+
+    public function deleteOccurrence()
+    {
+        if ($this->deletionTaskId && $this->deletionPlannedAt) {
+            $task = Auth::user()->tasks()->findOrFail($this->deletionTaskId);
+            $task->skip($this->deletionPlannedAt);
+            $this->cancelDeletion();
+        }
+    }
+
+    public function deleteAll()
+    {
+        if ($this->deletionTaskId) {
+            $task = Auth::user()->tasks()->findOrFail($this->deletionTaskId);
+            $task->delete();
+            $this->cancelDeletion();
+        }
+    }
+
+    public function cancelDeletion()
+    {
+        $this->reset(['confirmingTaskDeletion', 'deletionTaskId', 'deletionPlannedAt']);
+    }
+}
