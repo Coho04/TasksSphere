@@ -32,6 +32,7 @@ class User extends Authenticatable
         'email',
         'password',
         'language',
+        'fcm_token',
     ];
 
     /**
@@ -82,5 +83,13 @@ class User extends Authenticatable
     public function tasks()
     {
         return $this->hasMany(Task::class);
+    }
+
+    /**
+     * Route notifications for the FCM channel.
+     */
+    public function routeNotificationForFcm(): ?string
+    {
+        return $this->fcm_token;
     }
 }

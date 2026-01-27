@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Task;
+use App\Notifications\TaskReminderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -52,9 +53,16 @@ class TaskApiController extends Controller
             'recurrence_rule.times.*' => 'string|regex:/^[0-2][0-9]:[0-5][0-9]$/',
             'recurrence_rule.weekdays' => 'nullable|array',
             'recurrence_rule.weekdays.*' => 'integer|min:1|max:7',
+            'notify' => 'nullable|boolean',
         ]);
 
-        return Auth::user()->tasks()->create($validated);
+        $task = Auth::user()->tasks()->create($validated);
+
+        if ($request->boolean('notify')) {
+            Auth::user()->notify(new TaskReminderNotification($task));
+        }
+
+        return $task;
     }
 
     public function show(Task $task)

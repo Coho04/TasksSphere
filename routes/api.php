@@ -13,6 +13,7 @@ Route::get('/user', function (Request $request) {
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/fcm-token', [AuthController::class, 'updateFcmToken']);
     Route::get('/tasks', [TaskApiController::class, 'index']);
     Route::get('/tasks/occurrences', [TaskApiController::class, 'occurrences']);
     Route::post('/tasks', [TaskApiController::class, 'store']);
