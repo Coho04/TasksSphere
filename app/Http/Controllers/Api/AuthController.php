@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\UserDevice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -50,7 +51,7 @@ class AuthController extends Controller
         $deviceId = $request->device_id;
 
         // Falls dieser Token bereits bei einem anderen Benutzer registriert ist, dort entfernen
-        \App\Models\UserDevice::where('fcm_token', $fcmToken)
+        UserDevice::where('fcm_token', $fcmToken)
             ->where('user_id', '!=', $user->id)
             ->delete();
 

@@ -24,6 +24,26 @@ Der Fokus liegt derzeit auf dem **Laravel-Backend** und dem **Web-Interface**. D
 - **Mobile**: Flutter 3.
 - **Datenbank**: MySQL/PostgreSQL (Standard Laravel).
 
+### Firebase Cloud Messaging (FCM)
+
+Das Projekt unterstützt Push-Benachrichtigungen via Firebase.
+
+#### Mobile App Integration (WebView)
+Wenn die App als WebView eingebunden wird (z. B. in Flutter), müssen das FCM-Token und die Geräte-ID bei jedem Request in den HTTP-Headern mitgesendet werden:
+
+```dart
+headers: {
+  'X-FCM-Token': fcmToken,
+  'X-Device-ID': deviceId,
+}
+```
+
+Eine Laravel-Middleware (`HandleFcmTokenHeader`) erkennt diese Header automatisch und verknüpft das Gerät mit dem aktuell angemeldeten Benutzer.
+
+#### API Integration
+Für native API-Anfragen steht folgender Endpunkt zur Verfügung:
+`POST /api/fcm-token` mit den Feldern `fcm_token` und `device_id` (optional).
+
 ## Installation
 
 ### Backend (Laravel)
