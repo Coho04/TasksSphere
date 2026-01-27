@@ -44,6 +44,13 @@ Eine Laravel-Middleware (`HandleFcmTokenHeader`) erkennt diese Header automatisc
 Für native API-Anfragen steht folgender Endpunkt zur Verfügung:
 `POST /api/fcm-token` mit den Feldern `fcm_token` und `device_id` (optional).
 
+#### Benachrichtigungen testen
+Du kannst den Versand von Benachrichtigungen mit folgendem Artisan-Befehl testen:
+```bash
+php artisan fcm:test-notification {user_id}
+```
+Dieser Befehl sendet eine einfache Test-Push-Nachricht an alle registrierten Geräte des angegebenen Benutzers.
+
 ## Installation
 
 ### Backend (Laravel)
