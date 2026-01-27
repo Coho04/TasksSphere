@@ -20,11 +20,13 @@ class Task extends Model
         'is_archived',
         'recurrence_rule',
         'recurrence_timezone',
+        'last_notified_at',
     ];
 
     protected $casts = [
         'due_at' => 'datetime',
         'completed_at' => 'datetime',
+        'last_notified_at' => 'datetime',
         'is_active' => 'boolean',
         'is_archived' => 'boolean',
         'recurrence_rule' => 'array',
@@ -137,22 +139,22 @@ class Task extends Model
         $interval = $rule['interval'] ?? 1;
         $times = $rule['times'] ?? [];
 
-        // Wir brauchen einen Startpunkt für die Berechnung. 
-        // Da due_at immer auf das nächste fällige Datum aktualisiert wird, 
+        // Wir brauchen einen Startpunkt für die Berechnung.
+        // Da due_at immer auf das nächste fällige Datum aktualisiert wird,
         // ist es kein zuverlässiger Startpunkt für die gesamte Historie/Zukunft.
         // Aber für die Anzeige der nächsten 7 Tage reicht es, wenn wir beim aktuellen due_at anfangen
         // und AUCH überfällige Termine prüfen.
-        
+
         $current = $this->due_at ? clone $this->due_at : $this->calculateNextDueDate(now()->subMinutes(1));
-        
+
         if (!$current) {
             return $occurrences;
         }
-        
+
         // Zurückgehen zum Fensterstart oder zum ersten unvollständigen Termin
         // Da wir nicht ewig zurückgehen wollen, begrenzen wir das auf z.B. 30 Tage
         $searchStart = $start->copy()->subDays(30);
-        
+
         // Find approximate start point: Start from current due_at and go back as long as it's after searchStart
         $tempDue = clone $current;
         $limit = 100;
@@ -160,12 +162,12 @@ class Task extends Model
             // This is tricky because calculateNextDueDate goes forward.
             // For now, let's just start from $this->due_at and go forward until $end.
             // And also check if the current $this->due_at is overdue.
-            break; 
+            break;
         }
 
         $tempDue = clone $current;
         $limit = 100;
-        
+
         // If the current due_at is before our window, it's overdue
         if ($tempDue->isBefore($start)) {
              // Es ist überfällig. Wir zeigen es an.
@@ -184,7 +186,7 @@ class Task extends Model
                 'planned_at' => clone $tempDue,
                 'is_completed' => $this->isHandledAt($tempDue)
             ]);
-            
+
             $tempDue = $this->calculateNextDueDate($tempDue);
             $limit--;
         }

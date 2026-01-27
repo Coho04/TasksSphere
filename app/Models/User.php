@@ -85,11 +85,23 @@ class User extends Authenticatable
         return $this->hasMany(Task::class);
     }
 
+    public function devices()
+    {
+        return $this->hasMany(UserDevice::class);
+    }
+
     /**
      * Route notifications for the FCM channel.
      */
-    public function routeNotificationForFcm(): ?string
+    public function routeNotificationForFcm(): array|string|null
     {
-        return $this->fcm_token;
+        $tokens = $this->devices()->pluck('fcm_token')->toArray();
+
+        // Falls wir noch alte Tokens im User-Model haben, nehmen wir die mit dazu (optional)
+        if ($this->fcm_token && !in_array($this->fcm_token, $tokens)) {
+            $tokens[] = $this->fcm_token;
+        }
+
+        return $tokens;
     }
 }

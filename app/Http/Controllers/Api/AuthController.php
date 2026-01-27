@@ -42,10 +42,33 @@ class AuthController extends Controller
     {
         $request->validate([
             'fcm_token' => 'required|string',
+            'device_id' => 'nullable|string',
         ]);
 
-        $request->user()->update([
-            'fcm_token' => $request->fcm_token,
+        $user = $request->user();
+        $fcmToken = $request->fcm_token;
+        $deviceId = $request->device_id;
+
+        // Falls dieser Token bereits bei einem anderen Benutzer registriert ist, dort entfernen
+        \App\Models\UserDevice::where('fcm_token', $fcmToken)
+            ->where('user_id', '!=', $user->id)
+            ->delete();
+
+        if ($deviceId) {
+            $user->devices()->updateOrCreate(
+                ['device_id' => $deviceId],
+                ['fcm_token' => $fcmToken]
+            );
+        } else {
+            $user->devices()->firstOrCreate(
+                ['fcm_token' => $fcmToken],
+                ['device_id' => null]
+            );
+        }
+
+        // Abwärtskompatibilität: Einzelnes Token im User-Model ebenfalls aktualisieren
+        $user->update([
+            'fcm_token' => $fcmToken,
         ]);
 
         return response()->json(['message' => 'FCM Token aktualisiert']);
