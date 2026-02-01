@@ -49,22 +49,27 @@ class Task extends Model
 
     public function isHandledAt($date): bool
     {
+        $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
+        $plannedAt = \Illuminate\Support\Carbon::parse($date, $timezone)->setTimezone('UTC');
         return $this->completions()
-            ->where('planned_at', \Illuminate\Support\Carbon::parse($date)->toDateTimeString())
+            ->where('planned_at', $plannedAt->toDateTimeString())
             ->exists();
     }
 
     public function isSkippedAt($date): bool
     {
+        $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
+        $plannedAt = \Illuminate\Support\Carbon::parse($date, $timezone)->setTimezone('UTC');
         return $this->completions()
-            ->where('planned_at', \Illuminate\Support\Carbon::parse($date)->toDateTimeString())
+            ->where('planned_at', $plannedAt->toDateTimeString())
             ->where('is_skipped', true)
             ->exists();
     }
 
     public function complete($plannedAt = null)
     {
-        $plannedAt = $plannedAt ? \Illuminate\Support\Carbon::parse($plannedAt) : ($this->due_at ?: now());
+        $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
+        $plannedAt = $plannedAt ? \Illuminate\Support\Carbon::parse($plannedAt, $timezone)->setTimezone('UTC') : ($this->due_at ?: now());
 
         if ($this->isRecurring()) {
             $this->completions()->updateOrCreate(
@@ -83,7 +88,8 @@ class Task extends Model
 
     public function skip($plannedAt)
     {
-        $plannedAt = \Illuminate\Support\Carbon::parse($plannedAt);
+        $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
+        $plannedAt = \Illuminate\Support\Carbon::parse($plannedAt, $timezone)->setTimezone('UTC');
 
         if ($this->isRecurring()) {
             $this->completions()->updateOrCreate(
@@ -101,9 +107,10 @@ class Task extends Model
 
     public function getOccurrences($start, $end)
     {
+        $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
         $occurrences = collect();
-        $start = \Illuminate\Support\Carbon::parse($start);
-        $end = \Illuminate\Support\Carbon::parse($end);
+        $start = \Illuminate\Support\Carbon::parse($start, $timezone)->setTimezone('UTC');
+        $end = \Illuminate\Support\Carbon::parse($end, $timezone)->setTimezone('UTC');
 
         if (!$this->isRecurring()) {
             if (!$this->due_at) {
@@ -134,35 +141,10 @@ class Task extends Model
         }
 
         // Recurring logic
-        $rule = $this->recurrence_rule;
-        $frequency = $rule['frequency'] ?? 'daily';
-        $interval = $rule['interval'] ?? 1;
-        $times = $rule['times'] ?? [];
-
-        // Wir brauchen einen Startpunkt für die Berechnung.
-        // Da due_at immer auf das nächste fällige Datum aktualisiert wird,
-        // ist es kein zuverlässiger Startpunkt für die gesamte Historie/Zukunft.
-        // Aber für die Anzeige der nächsten 7 Tage reicht es, wenn wir beim aktuellen due_at anfangen
-        // und AUCH überfällige Termine prüfen.
-
         $current = $this->due_at ? clone $this->due_at : $this->calculateNextDueDate(now()->subMinutes(1));
 
         if (!$current) {
             return $occurrences;
-        }
-
-        // Zurückgehen zum Fensterstart oder zum ersten unvollständigen Termin
-        // Da wir nicht ewig zurückgehen wollen, begrenzen wir das auf z.B. 30 Tage
-        $searchStart = $start->copy()->subDays(30);
-
-        // Find approximate start point: Start from current due_at and go back as long as it's after searchStart
-        $tempDue = clone $current;
-        $limit = 100;
-        while ($tempDue->isAfter($searchStart) && $limit > 0) {
-            // This is tricky because calculateNextDueDate goes forward.
-            // For now, let's just start from $this->due_at and go forward until $end.
-            // And also check if the current $this->due_at is overdue.
-            break;
         }
 
         $tempDue = clone $current;
@@ -206,7 +188,11 @@ class Task extends Model
         $times = $rule['times'] ?? [];
         $weekdays = $rule['weekdays'] ?? []; // Array of integers 1 (Mon) to 7 (Sun)
 
+        $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
+
+        // Wir arbeiten in der lokalen Zeitzone für die Berechnung
         $currentDue = $from ? \Illuminate\Support\Carbon::parse($from) : ($this->due_at ? clone $this->due_at : now());
+        $currentDue->setTimezone($timezone);
 
         if (!empty($times)) {
             sort($times);
@@ -224,7 +210,8 @@ class Task extends Model
             if ($nextTime) {
                 // There is a later time today
                 [$hour, $minute] = explode(':', $nextTime);
-                return $currentDue->copy()->setTime((int)$hour, (int)$minute);
+                $result = $currentDue->copy()->setTime((int)$hour, (int)$minute);
+                return $result->setTimezone('UTC');
             } else {
                 // No more times today, move to next interval day
                 if ($frequency === 'weekly' && !empty($weekdays)) {
@@ -239,7 +226,8 @@ class Task extends Model
                 }
 
                 [$hour, $minute] = explode(':', $times[0]);
-                return $nextDue->copy()->setTime((int)$hour, (int)$minute);
+                $result = $nextDue->copy()->setTime((int)$hour, (int)$minute);
+                return $result->setTimezone('UTC');
             }
         }
 
@@ -251,10 +239,10 @@ class Task extends Model
                 $nextDue->addDay();
                 $limit--;
             }
-            return $nextDue;
+            return $nextDue->setTimezone('UTC');
         }
 
-        return $this->addInterval($currentDue, $frequency, $interval);
+        return $this->addInterval($currentDue, $frequency, $interval)->setTimezone('UTC');
     }
 
     protected function addInterval($date, $frequency, $interval)

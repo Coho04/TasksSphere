@@ -53,8 +53,14 @@ class TaskApiController extends Controller
             'recurrence_rule.times.*' => 'string|regex:/^[0-2][0-9]:[0-5][0-9]$/',
             'recurrence_rule.weekdays' => 'nullable|array',
             'recurrence_rule.weekdays.*' => 'integer|min:1|max:7',
+            'recurrence_timezone' => 'nullable|string|timezone',
             'notify' => 'nullable|boolean',
         ]);
+
+        if (!empty($validated['due_at']) && !empty($validated['recurrence_timezone'])) {
+            $validated['due_at'] = \Illuminate\Support\Carbon::parse($validated['due_at'], $validated['recurrence_timezone'])
+                ->setTimezone('UTC');
+        }
 
         $task = Auth::user()->tasks()->create($validated);
 
@@ -86,9 +92,18 @@ class TaskApiController extends Controller
             'recurrence_rule.times.*' => 'string|regex:/^[0-2][0-9]:[0-5][0-9]$/',
             'recurrence_rule.weekdays' => 'nullable|array',
             'recurrence_rule.weekdays.*' => 'integer|min:1|max:7',
+            'recurrence_timezone' => 'nullable|string|timezone',
             'is_active' => 'boolean',
             'is_archived' => 'boolean',
         ]);
+
+        if (!empty($validated['due_at'])) {
+            $timezone = $validated['recurrence_timezone'] ?? $task->recurrence_timezone;
+            if ($timezone) {
+                $validated['due_at'] = \Illuminate\Support\Carbon::parse($validated['due_at'], $timezone)
+                    ->setTimezone('UTC');
+            }
+        }
 
         $task->update($validated);
         return $task;
