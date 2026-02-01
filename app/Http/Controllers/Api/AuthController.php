@@ -27,6 +27,14 @@ class AuthController extends Controller
             ]);
         }
 
+        // Falls FCM Token im Header oder Body mitgesendet wird, auch beim Login speichern
+        $fcmToken = $request->header('X-FCM-Token') ?? $request->fcm_token;
+        $deviceId = $request->header('X-Device-ID') ?? $request->device_id;
+
+        if ($fcmToken) {
+            $user->updateFcmToken($fcmToken, $deviceId);
+        }
+
         return response()->json([
             'token' => $user->createToken($request->device_name)->plainTextToken,
             'user' => $user
@@ -48,31 +56,10 @@ class AuthController extends Controller
             'device_id' => 'nullable|string',
         ]);
 
-        $user = $request->user();
-        $fcmToken = $request->fcm_token;
-        $deviceId = $request->device_id;
-
-        // Falls dieser Token bereits registriert ist (bei egal welchem User), dort entfernen oder aktualisieren
-        UserDevice::where('fcm_token', $fcmToken)->delete();
-
-        if ($deviceId) {
-            $user->devices()->updateOrCreate(
-                ['device_id' => $deviceId],
-                [
-                    'fcm_token' => $fcmToken,
-                ]
-            );
-        } else {
-            $user->devices()->create([
-                'fcm_token' => $fcmToken,
-                'device_id' => null,
-            ]);
-        }
-
-        // Abwärtskompatibilität: Einzelnes Token im User-Model ebenfalls aktualisieren
-        $user->update([
-            'fcm_token' => $fcmToken,
-        ]);
+        $request->user()->updateFcmToken(
+            $request->fcm_token,
+            $request->device_id
+        );
 
         return response()->json(['message' => 'FCM Token aktualisiert']);
     }

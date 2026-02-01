@@ -20,35 +20,10 @@ class HandleFcmTokenHeader
 
         // Nur verarbeiten, wenn der Benutzer eingeloggt ist und die Header vorhanden sind
         if (auth()->check() && $request->hasHeader('X-FCM-Token')) {
-            $user = auth()->user();
-            $fcmToken = $request->header('X-FCM-Token');
-            $deviceId = $request->header('X-Device-ID');
-
-            // Falls dieser Token bereits bei einem anderen Benutzer registriert ist, dort entfernen
-            UserDevice::where('fcm_token', $fcmToken)
-                ->where('user_id', '!=', $user->id)
-                ->delete();
-
-            if ($deviceId) {
-                $user->devices()->updateOrCreate(
-                    ['device_id' => $deviceId],
-                    [
-                        'fcm_token' => $fcmToken,
-                    ]
-                );
-            } else {
-                $user->devices()->updateOrCreate(
-                    ['fcm_token' => $fcmToken],
-                    [
-                        'device_id' => null,
-                    ]
-                );
-            }
-
-            // Abwärtskompatibilität: Einzelnes Token im User-Model ebenfalls aktualisieren
-            if ($user->fcm_token !== $fcmToken) {
-                $user->update(['fcm_token' => $fcmToken]);
-            }
+            auth()->user()->updateFcmToken(
+                $request->header('X-FCM-Token'),
+                $request->header('X-Device-ID')
+            );
         }
 
         return $response;

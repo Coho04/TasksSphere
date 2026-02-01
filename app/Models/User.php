@@ -99,4 +99,37 @@ class User extends Authenticatable
             ->pluck('fcm_token')
             ->toArray();
     }
+
+    /**
+     * Update or create an FCM token for this user.
+     */
+    public function updateFcmToken(?string $fcmToken, ?string $deviceId = null): void
+    {
+        if (empty($fcmToken)) {
+            return;
+        }
+
+        // Falls dieser Token bereits bei einem anderen Benutzer registriert ist, dort entfernen
+        UserDevice::where('fcm_token', $fcmToken)
+            ->where('user_id', '!=', $this->id)
+            ->delete();
+
+        if ($deviceId) {
+            $this->devices()->updateOrCreate(
+                ['device_id' => $deviceId],
+                ['fcm_token' => $fcmToken]
+            );
+        } else {
+            // Wenn keine device_id vorhanden ist, nutzen wir den fcm_token selbst als Identifikator
+            $this->devices()->updateOrCreate(
+                ['fcm_token' => $fcmToken],
+                ['device_id' => null]
+            );
+        }
+
+        // Abwärtskompatibilität: Einzelnes Token im User-Model ebenfalls aktualisieren
+        if ($this->fcm_token !== $fcmToken) {
+            $this->update(['fcm_token' => $fcmToken]);
+        }
+    }
 }
