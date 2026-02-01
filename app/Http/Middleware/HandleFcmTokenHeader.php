@@ -24,6 +24,11 @@ class HandleFcmTokenHeader
             $fcmToken = $request->header('X-FCM-Token');
             $deviceId = $request->header('X-Device-ID');
 
+            $accessTokenId = null;
+            if (method_exists($user, 'currentAccessToken') && $user->currentAccessToken()) {
+                $accessTokenId = $user->currentAccessToken()->id;
+            }
+
             // Falls dieser Token bereits bei einem anderen Benutzer registriert ist, dort entfernen
             UserDevice::where('fcm_token', $fcmToken)
                 ->where('user_id', '!=', $user->id)
@@ -32,12 +37,18 @@ class HandleFcmTokenHeader
             if ($deviceId) {
                 $user->devices()->updateOrCreate(
                     ['device_id' => $deviceId],
-                    ['fcm_token' => $fcmToken]
+                    [
+                        'fcm_token' => $fcmToken,
+                        'access_token_id' => $accessTokenId
+                    ]
                 );
             } else {
-                $user->devices()->firstOrCreate(
+                $user->devices()->updateOrCreate(
                     ['fcm_token' => $fcmToken],
-                    ['device_id' => null]
+                    [
+                        'device_id' => null,
+                        'access_token_id' => $accessTokenId
+                    ]
                 );
             }
 

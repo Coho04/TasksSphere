@@ -63,4 +63,21 @@ class FcmTokenHeaderTest extends TestCase
             'fcm_token' => 'header-token-123'
         ]);
     }
+
+    public function test_middleware_sets_access_token_id_when_using_sanctum(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test-device');
+
+        $this->withHeader('Authorization', 'Bearer ' . $token->plainTextToken)
+            ->withHeader('X-FCM-Token', 'header-token-sanctum')
+            ->withHeader('X-Device-ID', 'device-sanctum')
+            ->getJson('/api/user');
+
+        $this->assertDatabaseHas('user_devices', [
+            'user_id' => $user->id,
+            'fcm_token' => 'header-token-sanctum',
+            'access_token_id' => $token->accessToken->id
+        ]);
+    }
 }
