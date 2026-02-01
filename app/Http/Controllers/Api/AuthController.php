@@ -35,7 +35,12 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $accessToken = $request->user()->currentAccessToken();
+
+        // Verknüpfte Geräte-Tokens bereinigen (Session-Bindung aufheben)
+        UserDevice::where('access_token_id', $accessToken->id)->update(['access_token_id' => null]);
+
+        $accessToken->delete();
         return response()->json(['message' => 'Abgemeldet']);
     }
 
@@ -49,22 +54,25 @@ class AuthController extends Controller
         $user = $request->user();
         $fcmToken = $request->fcm_token;
         $deviceId = $request->device_id;
+        $accessTokenId = $user->currentAccessToken()->id;
 
-        // Falls dieser Token bereits bei einem anderen Benutzer registriert ist, dort entfernen
-        UserDevice::where('fcm_token', $fcmToken)
-            ->where('user_id', '!=', $user->id)
-            ->delete();
+        // Falls dieser Token bereits registriert ist (bei egal welchem User), dort entfernen oder aktualisieren
+        UserDevice::where('fcm_token', $fcmToken)->delete();
 
         if ($deviceId) {
             $user->devices()->updateOrCreate(
                 ['device_id' => $deviceId],
-                ['fcm_token' => $fcmToken]
+                [
+                    'fcm_token' => $fcmToken,
+                    'access_token_id' => $accessTokenId
+                ]
             );
         } else {
-            $user->devices()->firstOrCreate(
-                ['fcm_token' => $fcmToken],
-                ['device_id' => null]
-            );
+            $user->devices()->create([
+                'fcm_token' => $fcmToken,
+                'device_id' => null,
+                'access_token_id' => $accessTokenId
+            ]);
         }
 
         // Abwärtskompatibilität: Einzelnes Token im User-Model ebenfalls aktualisieren

@@ -15,12 +15,13 @@ class FcmTokenUpdateTest extends TestCase
     public function test_user_can_update_fcm_token_with_device_id(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        $token = $user->createToken('test-device')->plainTextToken;
 
-        $response = $this->postJson('/api/fcm-token', [
-            'fcm_token' => 'new-token-123',
-            'device_id' => 'my-phone-uuid',
-        ]);
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/fcm-token', [
+                'fcm_token' => 'new-token-123',
+                'device_id' => 'my-phone-uuid',
+            ]);
 
         $response->assertStatus(200);
 
@@ -37,19 +38,21 @@ class FcmTokenUpdateTest extends TestCase
     public function test_user_can_update_multiple_devices(): void
     {
         $user = User::factory()->create();
-        Sanctum::actingAs($user);
+        $token = $user->createToken('test-device')->plainTextToken;
 
         // First device
-        $this->postJson('/api/fcm-token', [
-            'fcm_token' => 'token-phone',
-            'device_id' => 'phone-id',
-        ]);
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/fcm-token', [
+                'fcm_token' => 'token-phone',
+                'device_id' => 'phone-id',
+            ]);
 
         // Second device
-        $this->postJson('/api/fcm-token', [
-            'fcm_token' => 'token-tablet',
-            'device_id' => 'tablet-id',
-        ]);
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/fcm-token', [
+                'fcm_token' => 'token-tablet',
+                'device_id' => 'tablet-id',
+            ]);
 
         $this->assertEquals(2, $user->devices()->count());
         $this->assertEquals(['token-phone', 'token-tablet'], $user->devices()->pluck('fcm_token')->sort()->values()->toArray());
@@ -67,13 +70,14 @@ class FcmTokenUpdateTest extends TestCase
             'device_id' => 'common-device',
         ]);
 
-        Sanctum::actingAs($user2);
+        $token2 = $user2->createToken('test-device-2')->plainTextToken;
 
         // User2 claims the token
-        $this->postJson('/api/fcm-token', [
-            'fcm_token' => 'shared-token',
-            'device_id' => 'common-device',
-        ]);
+        $this->withHeader('Authorization', 'Bearer ' . $token2)
+            ->postJson('/api/fcm-token', [
+                'fcm_token' => 'shared-token',
+                'device_id' => 'common-device',
+            ]);
 
         $this->assertDatabaseMissing('user_devices', ['user_id' => $user1->id, 'fcm_token' => 'shared-token']);
         $this->assertDatabaseHas('user_devices', ['user_id' => $user2->id, 'fcm_token' => 'shared-token']);

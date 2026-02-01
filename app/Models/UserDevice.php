@@ -13,6 +13,7 @@ class UserDevice extends Model
         'user_id',
         'device_id',
         'fcm_token',
+        'access_token_id',
     ];
 
     public function user()

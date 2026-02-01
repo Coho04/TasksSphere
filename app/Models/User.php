@@ -95,13 +95,9 @@ class User extends Authenticatable
      */
     public function routeNotificationForFcm(): array|string|null
     {
-        $tokens = $this->devices()->pluck('fcm_token')->toArray();
-
-        // Falls wir noch alte Tokens im User-Model haben, nehmen wir die mit dazu (optional)
-        if ($this->fcm_token && !in_array($this->fcm_token, $tokens)) {
-            $tokens[] = $this->fcm_token;
-        }
-
-        return $tokens;
+        return $this->devices()
+            ->whereNotNull('access_token_id')
+            ->pluck('fcm_token')
+            ->toArray();
     }
 }
