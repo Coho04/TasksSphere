@@ -37,6 +37,8 @@ class SendTaskReminders extends Command
 
         $tasks = Task::whereNotNull('due_at')
             ->where('due_at', '<=', $now)
+            ->where('is_active', true)
+            ->where('is_archived', false)
             ->whereNull('completed_at')
             ->where(function ($query) {
                 $query->whereNull('last_notified_at')
@@ -56,7 +58,7 @@ class SendTaskReminders extends Command
                 if (!empty($tokens)) {
                     try {
                         $user->notify(new TaskReminderNotification($task));
-                        $task->update(['last_notified_at' => $now]);
+                        $task->update(['last_notified_at' => now()]);
                         $this->info("Benachrichtigung für Task ID {$task->id} an Benutzer {$user->email} gesendet.");
                     } catch (\Exception $e) {
                         $this->error("Fehler beim Senden der Benachrichtigung für Task ID {$task->id}: " . $e->getMessage());
@@ -65,11 +67,11 @@ class SendTaskReminders extends Command
                 } else {
                     // Markieren als benachrichtigt, damit wir nicht hängen bleiben,
                     // auch wenn aktuell kein Token da ist.
-                    $task->update(['last_notified_at' => $now]);
+                    $task->update(['last_notified_at' => now()]);
                     $this->warn("Kein FCM Token für Benutzer {$user->email} (Task ID {$task->id}) gefunden.");
                 }
             } else {
-                $task->update(['last_notified_at' => $now]);
+                $task->update(['last_notified_at' => now()]);
                 $this->warn("Kein Benutzer für Task ID {$task->id} gefunden.");
             }
         }
