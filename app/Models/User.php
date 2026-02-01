@@ -96,7 +96,6 @@ class User extends Authenticatable
     public function routeNotificationForFcm(): array|string|null
     {
         return $this->devices()
-            ->whereNotNull('access_token_id')
             ->pluck('fcm_token')
             ->toArray();
     }

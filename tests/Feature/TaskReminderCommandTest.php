@@ -19,12 +19,10 @@ class TaskReminderCommandTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $token = $user->createToken('test-device');
         $device = UserDevice::create([
             'user_id' => $user->id,
             'device_id' => 'device-123',
             'fcm_token' => 'fake-fcm-token',
-            'access_token_id' => $token->accessToken->id,
         ]);
 
         $task = Task::factory()->create([
@@ -57,11 +55,9 @@ class TaskReminderCommandTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
-        $token = $user->createToken('test-device');
         UserDevice::create([
             'user_id' => $user->id,
             'fcm_token' => 'fake-fcm-token',
-            'access_token_id' => $token->accessToken->id,
         ]);
 
         $dueAt = now()->subMinutes(10);
