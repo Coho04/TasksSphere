@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Task extends Model
 {
@@ -40,6 +41,62 @@ class Task extends Model
     public function completions()
     {
         return $this->hasMany(TaskCompletion::class);
+    }
+
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Accessor for due_at to return in local timezone.
+     */
+    protected function dueAt(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if (!$value) return null;
+                $date = \Illuminate\Support\Carbon::parse($value);
+                if ($this->recurrence_timezone) {
+                    $date->setTimezone($this->recurrence_timezone);
+                }
+                return $date;
+            }
+        );
+    }
+
+    /**
+     * Accessor for completed_at to return in local timezone.
+     */
+    protected function completedAt(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if (!$value) return null;
+                $date = \Illuminate\Support\Carbon::parse($value);
+                if ($this->recurrence_timezone) {
+                    $date->setTimezone($this->recurrence_timezone);
+                }
+                return $date;
+            }
+        );
+    }
+
+    /**
+     * Accessor for last_notified_at to return in local timezone.
+     */
+    protected function lastNotifiedAt(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if (!$value) return null;
+                $date = \Illuminate\Support\Carbon::parse($value);
+                if ($this->recurrence_timezone) {
+                    $date->setTimezone($this->recurrence_timezone);
+                }
+                return $date;
+            }
+        );
     }
 
     public function isRecurring(): bool

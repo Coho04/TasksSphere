@@ -47,7 +47,7 @@ class SendTaskReminders extends Command
             ->with('user')
             ->get();
 
-        $this->info("Gefundene fällige Aufgaben: " . $tasks->count());
+        $this->info("Gefundene fällige Aufgaben: " . $tasks->count(). ' | ' . now());
 
         foreach ($tasks as $task) {
             $user = $task->user;

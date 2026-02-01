@@ -18,12 +18,21 @@ class HandleFcmTokenHeader
     {
         $response = $next($request);
 
-        // Nur verarbeiten, wenn der Benutzer eingeloggt ist und die Header vorhanden sind
-        if (auth()->check() && $request->hasHeader('X-FCM-Token')) {
-            auth()->user()->updateFcmToken(
-                $request->header('X-FCM-Token'),
-                $request->header('X-Device-ID')
-            );
+        // Nur verarbeiten, wenn der Benutzer eingeloggt ist
+        if (auth()->check()) {
+            // Zeitzone aktualisieren, falls mitgesendet
+            $timezone = $request->header('X-Timezone');
+            if ($timezone && auth()->user()->timezone !== $timezone) {
+                auth()->user()->update(['timezone' => $timezone]);
+            }
+
+            // FCM Token verarbeiten
+            if ($request->hasHeader('X-FCM-Token')) {
+                auth()->user()->updateFcmToken(
+                    $request->header('X-FCM-Token'),
+                    $request->header('X-Device-ID')
+                );
+            }
         }
 
         return $response;

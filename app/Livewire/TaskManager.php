@@ -22,6 +22,7 @@ class TaskManager extends Component
     public $confirmingTaskDeletion = false;
     public $deletionTaskId = null;
     public $deletionPlannedAt = null;
+    public $recurrence_timezone;
 
     protected $rules = [
         'title' => 'required|string|max:255',
@@ -30,7 +31,26 @@ class TaskManager extends Component
         'frequency' => 'required|in:none,hourly,daily,weekly,monthly',
         'interval' => 'required|integer|min:1',
         'weekdays' => 'nullable|array',
+        'recurrence_timezone' => 'required|string|timezone',
     ];
+
+    public function mount()
+    {
+        $this->recurrence_timezone = Auth::user()->timezone ?: 'Europe/Berlin';
+    }
+
+    public function updateTimezone($timezone)
+    {
+        if (Auth::user()->timezone !== $timezone) {
+            Auth::user()->update(['timezone' => $timezone]);
+            $this->recurrence_timezone = $timezone;
+        }
+    }
+
+    public function updatedRecurrenceTimezone($value)
+    {
+        Auth::user()->update(['timezone' => $value]);
+    }
 
     public function addTime()
     {
@@ -115,7 +135,7 @@ class TaskManager extends Component
         }
 
         if ($dueAt) {
-            $date = \Illuminate\Support\Carbon::parse($dueAt);
+            $date = \Illuminate\Support\Carbon::parse($dueAt, $this->recurrence_timezone);
             if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
                 if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
                     $limit = 7;
@@ -130,7 +150,7 @@ class TaskManager extends Component
                 [$hour, $minute] = explode(':', $this->times[0]);
                 $date->setTime((int)$hour, (int)$minute);
             }
-            $dueAt = $date->toDateTimeString();
+            $dueAt = $date->setTimezone('UTC')->toDateTimeString();
         }
 
         Auth::user()->tasks()->create([
@@ -138,6 +158,7 @@ class TaskManager extends Component
             'description' => $this->description,
             'due_at' => $dueAt,
             'recurrence_rule' => $recurrence_rule,
+            'recurrence_timezone' => $this->recurrence_timezone,
         ]);
 
         $this->reset(['title', 'description', 'due_at', 'frequency', 'interval', 'times', 'weekdays', 'newTime', 'showForm']);
@@ -150,17 +171,19 @@ class TaskManager extends Component
         $this->title = $task->title;
         $this->description = $task->description;
         $this->due_at = $task->due_at ? $task->due_at->format('Y-m-d\TH:i') : null;
-        
+
         if ($task->isRecurring()) {
             $this->frequency = $task->recurrence_rule['frequency'];
             $this->interval = $task->recurrence_rule['interval'];
             $this->times = $task->recurrence_rule['times'] ?? [];
             $this->weekdays = $task->recurrence_rule['weekdays'] ?? [];
+            $this->recurrence_timezone = $task->recurrence_timezone ?? 'Europe/Berlin';
         } else {
             $this->frequency = 'none';
             $this->interval = 1;
             $this->times = [];
             $this->weekdays = [];
+            $this->recurrence_timezone = $task->recurrence_timezone ?? 'Europe/Berlin';
         }
 
         $this->isEditing = true;
@@ -188,7 +211,7 @@ class TaskManager extends Component
         }
 
         if ($dueAt) {
-            $date = \Illuminate\Support\Carbon::parse($dueAt);
+            $date = \Illuminate\Support\Carbon::parse($dueAt, $this->recurrence_timezone);
             if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
                 if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
                     $limit = 7;
@@ -203,7 +226,7 @@ class TaskManager extends Component
                 [$hour, $minute] = explode(':', $this->times[0]);
                 $date->setTime((int)$hour, (int)$minute);
             }
-            $dueAt = $date->toDateTimeString();
+            $dueAt = $date->setTimezone('UTC')->toDateTimeString();
         }
 
         $task->update([
@@ -211,6 +234,7 @@ class TaskManager extends Component
             'description' => $this->description,
             'due_at' => $dueAt,
             'recurrence_rule' => $recurrence_rule,
+            'recurrence_timezone' => $this->recurrence_timezone,
         ]);
 
         $this->cancelEdit();
@@ -230,7 +254,7 @@ class TaskManager extends Component
     public function deleteTask($taskId, $plannedAt = null)
     {
         $task = Auth::user()->tasks()->findOrFail($taskId);
-        
+
         if ($task->isRecurring() && $plannedAt) {
             $this->deletionTaskId = $taskId;
             $this->deletionPlannedAt = $plannedAt;

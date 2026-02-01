@@ -30,6 +30,11 @@ class AuthController extends Controller
         // Falls FCM Token im Header oder Body mitgesendet wird, auch beim Login speichern
         $fcmToken = $request->header('X-FCM-Token') ?? $request->fcm_token;
         $deviceId = $request->header('X-Device-ID') ?? $request->device_id;
+        $timezone = $request->header('X-Timezone') ?? $request->timezone;
+
+        if ($timezone) {
+            $user->update(['timezone' => $timezone]);
+        }
 
         if ($fcmToken) {
             $user->updateFcmToken($fcmToken, $deviceId);
@@ -54,7 +59,12 @@ class AuthController extends Controller
         $request->validate([
             'fcm_token' => 'required|string',
             'device_id' => 'nullable|string',
+            'timezone' => 'nullable|string|timezone',
         ]);
+
+        if ($request->timezone) {
+            $request->user()->update(['timezone' => $request->timezone]);
+        }
 
         $request->user()->updateFcmToken(
             $request->fcm_token,

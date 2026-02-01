@@ -32,6 +32,7 @@ class User extends Authenticatable
         'email',
         'password',
         'language',
+        'timezone',
         'fcm_token',
     ];
 

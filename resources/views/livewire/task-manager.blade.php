@@ -26,7 +26,7 @@
                     </span>
                     {{ $isEditing ? __('Aufgabe bearbeiten') : __('Was steht an?') }}
                 </h2>
-                
+
                 <form wire:submit.prevent="{{ $isEditing ? 'updateTask' : 'createTask' }}" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="md:col-span-2">
@@ -68,6 +68,16 @@
                                     <option value="monthly">{{ __('Monatlich') }}</option>
                                 </select>
                             </div>
+                        </div>
+
+                        <div>
+                            <label for="recurrence_timezone" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">{{ __('Zeitzone') }}</label>
+                            <select id="recurrence_timezone" wire:model.live="recurrence_timezone" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors sm:text-sm p-3">
+                                @foreach(\DateTimeZone::listIdentifiers() as $tz)
+                                    <option value="{{ $tz }}">{{ $tz }}</option>
+                                @endforeach
+                            </select>
+                            @error('recurrence_timezone') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="md:col-span-2" x-show="$wire.frequency === 'weekly'" x-transition>
@@ -131,33 +141,33 @@
             <section>
                 @php
                     $activeOccurrences = $occurrences->filter(fn($o) => !$o['is_completed']);
-                    
+
                     $groups = [];
-                    
+
                     // 1. Überfällig
                     $overdue = $activeOccurrences->filter(fn($o) => $o['planned_at'] && $o['planned_at']->isPast() && !$o['planned_at']->isToday());
                     if ($overdue->count() > 0) {
                         $groups[] = ['title' => __('Überfällig'), 'tasks' => $overdue, 'color' => 'red'];
                     }
-                    
+
                     // 2. Pro Tag für die nächsten 7 Tage
                     for ($i = 0; $i <= 7; $i++) {
                         $date = now()->addDays($i);
                         $dayTasks = $activeOccurrences->filter(fn($o) => $o['planned_at'] && $o['planned_at']->isSameDay($date));
-                        
+
                         if ($dayTasks->count() > 0) {
                             $title = $date->isToday() ? __('Heute') : ($date->isTomorrow() ? __('Morgen') : $date->translatedFormat('l, d.m.'));
                             $color = $date->isToday() ? 'blue' : ($date->isTomorrow() ? 'indigo' : 'gray');
                             $groups[] = ['title' => $title, 'tasks' => $dayTasks, 'color' => $color];
                         }
                     }
-                    
+
                     // 3. Später (nach den 7 Tagen)
                     $later = $activeOccurrences->filter(fn($o) => $o['planned_at'] && $o['planned_at']->isAfter(now()->addDays(7)->endOfDay()));
                     if ($later->count() > 0) {
                         $groups[] = ['title' => __('Später'), 'tasks' => $later, 'color' => 'gray'];
                     }
-                    
+
                     // 4. Ohne Datum
                     $noDate = $activeOccurrences->filter(fn($o) => !$o['planned_at']);
                     if ($noDate->count() > 0) {
@@ -179,7 +189,7 @@
 
                                 <div class="grid grid-cols-1 gap-3">
                                     @foreach($group['tasks'] as $occurrence)
-                                        @php 
+                                        @php
                                             $task = $occurrence['task'];
                                             $plannedAt = $occurrence['planned_at'];
                                         @endphp
@@ -189,7 +199,7 @@
                                                     <svg class="h-5 w-5 text-transparent hover:text-green-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                                                 </button>
                                             </div>
-                                            
+
                                             <div class="flex-grow min-w-0">
                                                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                                     <div class="flex flex-col">
@@ -214,7 +224,7 @@
                                                                 @endif
                                                             </div>
                                                         @endif
-                                                        
+
                                                         <div class="flex items-center -space-x-1">
                                                             @if($task->isRecurring())
                                                                 <span title="{{ __('Wiederkehrend') }}" class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 p-1.5 rounded-lg border border-purple-200 dark:border-purple-800">
@@ -262,7 +272,7 @@
                             {{ __('Zuletzt erledigt') }}
                         </h2>
                     </div>
-                    
+
                     <div class="space-y-3">
                         @foreach($completedCompletions as $completion)
                             <div class="bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 flex items-center justify-between border border-gray-100 dark:border-gray-700 opacity-75">
@@ -331,4 +341,13 @@
             </div>
         </div>
     @endif
+
+    @script
+    <script>
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (timezone) {
+            $wire.updateTimezone(timezone);
+        }
+    </script>
+    @endscript
 </div>
