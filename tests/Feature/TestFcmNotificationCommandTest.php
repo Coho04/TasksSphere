@@ -18,10 +18,13 @@ class TestFcmNotificationCommandTest extends TestCase
         Notification::fake();
 
         $user = User::factory()->create();
+        $token = $user->createToken('test-device');
+
         UserDevice::create([
             'user_id' => $user->id,
             'fcm_token' => 'fake-token',
-            'device_id' => 'device-1'
+            'device_id' => 'device-1',
+            'access_token_id' => $token->accessToken->id
         ]);
 
         $this->artisan('fcm:test-notification ' . $user->id)
