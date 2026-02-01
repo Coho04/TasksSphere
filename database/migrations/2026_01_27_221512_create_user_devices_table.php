@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('device_id')->nullable()->comment('Eindeutige ID des Handys');
-            $table->string('fcm_token', 512)->unique();
-            $table->unsignedBigInteger('access_token_id')->nullable();
+            $table->text('fcm_token');
             $table->timestamps();
 
-            $table->foreign('access_token_id')->references('id')->on('personal_access_tokens')->onDelete('cascade');
+            // Wir erlauben denselben fcm_token nicht mehrfach
+            // Aber ein User kann mehrere Geräte haben
         });
     }
 
