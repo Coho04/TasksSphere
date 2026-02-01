@@ -28,6 +28,8 @@ class SendTaskReminders extends Command
      */
     public function handle()
     {
+        Log::info("Scheduler: tasks:send-reminders command execution started.");
+
         $now = now();
 
         // Wir suchen nach Aufgaben, die fällig sind (due_at <= now),
@@ -48,6 +50,7 @@ class SendTaskReminders extends Command
             ->get();
 
         $this->info("Gefundene fällige Aufgaben: " . $tasks->count(). ' | ' . now());
+        Log::info("Scheduler: Found " . $tasks->count() . " due tasks to process.");
 
         foreach ($tasks as $task) {
             $user = $task->user;
@@ -75,5 +78,7 @@ class SendTaskReminders extends Command
                 $this->warn("Kein Benutzer für Task ID {$task->id} gefunden.");
             }
         }
+
+        Log::info("Scheduler: tasks:send-reminders command execution finished.");
     }
 }

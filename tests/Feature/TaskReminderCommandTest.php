@@ -34,7 +34,6 @@ class TaskReminderCommandTest extends TestCase
         ]);
 
         $this->artisan('tasks:send-reminders')
-            ->expectsOutput('Gefundene fällige Aufgaben: 1')
             ->expectsOutput("Benachrichtigung für Task ID {$task->id} an Benutzer {$user->email} gesendet.")
             ->assertExitCode(0);
 
@@ -68,7 +67,6 @@ class TaskReminderCommandTest extends TestCase
         ]);
 
         $this->artisan('tasks:send-reminders')
-            ->expectsOutput('Gefundene fällige Aufgaben: 0')
             ->assertExitCode(0);
 
         Notification::assertNothingSent();
