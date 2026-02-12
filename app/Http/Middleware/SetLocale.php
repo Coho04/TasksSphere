@@ -15,15 +15,19 @@ class SetLocale
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check()) {
-            app()->setLocale(auth()->user()->language);
+        $locale = config('app.locale');
+
+        if (auth()->check() && auth()->user()->language) {
+            $locale = auth()->user()->language;
         } elseif ($request->hasHeader('Accept-Language')) {
-            // Optional: Für API oder Gäste
-            $locale = substr($request->header('Accept-Language'), 0, 2);
-            if (in_array($locale, ['de', 'en'])) {
-                app()->setLocale($locale);
+            $headerLocale = substr($request->header('Accept-Language'), 0, 2);
+            if (in_array($headerLocale, ['de', 'en'])) {
+                $locale = $headerLocale;
             }
         }
+
+        app()->setLocale($locale);
+        \Illuminate\Support\Carbon::setLocale($locale);
 
         return $next($request);
     }

@@ -40,6 +40,18 @@ class TaskApiController extends Controller
         return $allOccurrences->sortBy('planned_at')->values();
     }
 
+    public function completed()
+    {
+        return \App\Models\TaskCompletion::with('task')
+            ->whereHas('task', function($query) {
+                $query->where('user_id', Auth::id());
+            })
+            ->where('is_skipped', false)
+            ->orderBy('completed_at', 'desc')
+            ->take(10)
+            ->get();
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
