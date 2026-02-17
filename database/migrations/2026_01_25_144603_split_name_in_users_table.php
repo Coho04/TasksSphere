@@ -43,7 +43,7 @@ return new class extends Migration
 
         \DB::table('users')->get()->each(function ($user) {
             \DB::table('users')->where('id', $user->id)->update([
-                'name' => trim($user->first_name . ' ' . $user->last_name),
+                'name' => trim($user->first_name.' '.$user->last_name),
             ]);
         });
 

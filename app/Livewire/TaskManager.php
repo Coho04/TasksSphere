@@ -6,25 +6,39 @@ use App\Models\TaskCompletion;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
-use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Component;
 
 class TaskManager extends Component
 {
     public $title;
+
     public $description;
+
     public $due_at;
+
     public $frequency = 'none';
+
     public $interval = 1;
+
     public $times = [];
+
     public $weekdays = [];
+
     public $newTime = '';
+
     public $editingTask = null;
+
     public $isEditing = false;
+
     public $showForm = false;
+
     public $confirmingTaskDeletion = false;
+
     public $deletionTaskId = null;
+
     public $deletionPlannedAt = null;
+
     public $recurrence_timezone;
 
     protected $rules = [
@@ -61,7 +75,7 @@ class TaskManager extends Component
             'newTime' => 'required|regex:/^[0-2][0-9]:[0-5][0-9]$/',
         ]);
 
-        if (!in_array($this->newTime, $this->times)) {
+        if (! in_array($this->newTime, $this->times)) {
             $this->times[] = $this->newTime;
             sort($this->times);
         }
@@ -105,7 +119,7 @@ class TaskManager extends Component
             ->get();
 
         // Count active occurrences for today
-        $todayCount = $occurrences->filter(fn($o) => !$o['is_completed'] && $o['planned_at'] && $o['planned_at']->isToday())->count();
+        $todayCount = $occurrences->filter(fn ($o) => ! $o['is_completed'] && $o['planned_at'] && $o['planned_at']->isToday())->count();
 
         return view('livewire.task-manager', [
             'tasks' => $allTasks,
@@ -129,32 +143,32 @@ class TaskManager extends Component
         if ($this->frequency !== 'none') {
             $recurrence_rule = [
                 'frequency' => $this->frequency,
-                'interval' => (int)$this->interval,
+                'interval' => (int) $this->interval,
                 'times' => $this->times,
                 'weekdays' => $this->frequency === 'weekly' ? $this->weekdays : [],
             ];
         }
 
         $dueAt = $this->due_at;
-        if (!$dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
+        if (! $dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
             $dueAt = now()->toDateTimeString();
         }
 
         if ($dueAt) {
             $date = Carbon::parse($dueAt, $this->recurrence_timezone);
-            if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
-                if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
+            if ($this->frequency === 'weekly' && ! empty($this->weekdays)) {
+                if (! in_array($date->dayOfWeekIso, $this->weekdays)) {
                     $limit = 7;
-                    while (!in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
+                    while (! in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
                         $date->addDay();
                         $limit--;
                     }
                 }
             }
-            if ($this->frequency !== 'none' && !empty($this->times)) {
+            if ($this->frequency !== 'none' && ! empty($this->times)) {
                 sort($this->times);
                 [$hour, $minute] = explode(':', $this->times[0]);
-                $date->setTime((int)$hour, (int)$minute);
+                $date->setTime((int) $hour, (int) $minute);
             }
             $dueAt = $date->setTimezone('UTC')->toDateTimeString();
         }
@@ -183,8 +197,7 @@ class TaskManager extends Component
             $this->interval = $task->recurrence_rule['interval'];
             $this->times = $task->recurrence_rule['times'] ?? [];
             $this->weekdays = $task->recurrence_rule['weekdays'] ?? [];
-        }
-        else {
+        } else {
             $this->frequency = 'none';
             $this->interval = 1;
             $this->times = [];
@@ -205,32 +218,32 @@ class TaskManager extends Component
         if ($this->frequency !== 'none') {
             $recurrence_rule = [
                 'frequency' => $this->frequency,
-                'interval' => (int)$this->interval,
+                'interval' => (int) $this->interval,
                 'times' => $this->times,
                 'weekdays' => $this->frequency === 'weekly' ? $this->weekdays : [],
             ];
         }
 
         $dueAt = $this->due_at;
-        if (!$dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
+        if (! $dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
             $dueAt = now()->toDateTimeString();
         }
 
         if ($dueAt) {
             $date = Carbon::parse($dueAt, $this->recurrence_timezone);
-            if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
-                if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
+            if ($this->frequency === 'weekly' && ! empty($this->weekdays)) {
+                if (! in_array($date->dayOfWeekIso, $this->weekdays)) {
                     $limit = 7;
-                    while (!in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
+                    while (! in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
                         $date->addDay();
                         $limit--;
                     }
                 }
             }
-            if ($this->frequency !== 'none' && !empty($this->times)) {
+            if ($this->frequency !== 'none' && ! empty($this->times)) {
                 sort($this->times);
                 [$hour, $minute] = explode(':', $this->times[0]);
-                $date->setTime((int)$hour, (int)$minute);
+                $date->setTime((int) $hour, (int) $minute);
             }
             $dueAt = $date->setTimezone('UTC')->toDateTimeString();
         }
@@ -265,8 +278,7 @@ class TaskManager extends Component
             $this->deletionTaskId = $taskId;
             $this->deletionPlannedAt = $plannedAt;
             $this->confirmingTaskDeletion = true;
-        }
-        else {
+        } else {
             $task->delete();
         }
     }

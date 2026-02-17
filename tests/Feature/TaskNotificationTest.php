@@ -26,7 +26,7 @@ class TaskNotificationTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        
+
         Notification::assertSentTo(
             $user,
             TaskReminderNotification::class
@@ -45,7 +45,7 @@ class TaskNotificationTest extends TestCase
         ]);
 
         $response->assertStatus(201);
-        
+
         Notification::assertNothingSent();
     }
 }

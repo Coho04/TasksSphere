@@ -13,6 +13,7 @@ class TestFcmNotification extends Notification
     use Queueable;
 
     protected $title;
+
     protected $message;
 
     /**

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\UserDevice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class FcmTokenUpdateTest extends TestCase
@@ -17,7 +16,7 @@ class FcmTokenUpdateTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('test-device')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/fcm-token', [
                 'fcm_token' => 'new-token-123',
                 'device_id' => 'my-phone-uuid',
@@ -41,14 +40,14 @@ class FcmTokenUpdateTest extends TestCase
         $token = $user->createToken('test-device')->plainTextToken;
 
         // First device
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/fcm-token', [
                 'fcm_token' => 'token-phone',
                 'device_id' => 'phone-id',
             ]);
 
         // Second device
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/fcm-token', [
                 'fcm_token' => 'token-tablet',
                 'device_id' => 'tablet-id',
@@ -73,7 +72,7 @@ class FcmTokenUpdateTest extends TestCase
         $token2 = $user2->createToken('test-device-2')->plainTextToken;
 
         // User2 claims the token
-        $this->withHeader('Authorization', 'Bearer ' . $token2)
+        $this->withHeader('Authorization', 'Bearer '.$token2)
             ->postJson('/api/fcm-token', [
                 'fcm_token' => 'shared-token',
                 'device_id' => 'common-device',

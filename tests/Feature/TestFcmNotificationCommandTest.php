@@ -25,9 +25,9 @@ class TestFcmNotificationCommandTest extends TestCase
             'device_id' => 'device-1',
         ]);
 
-        $this->artisan('fcm:test-notification ' . $user->id)
+        $this->artisan('fcm:test-notification '.$user->id)
             ->expectsOutput("Sende Test-Benachrichtigung an {$user->email}...")
-            ->expectsOutput("Die Benachrichtigung wurde erfolgreich an die Warteschlange von Firebase übergeben.")
+            ->expectsOutput('Die Benachrichtigung wurde erfolgreich an die Warteschlange von Firebase übergeben.')
             ->assertExitCode(0);
 
         Notification::assertSentTo(
@@ -39,7 +39,7 @@ class TestFcmNotificationCommandTest extends TestCase
     public function test_it_fails_if_user_not_found(): void
     {
         $this->artisan('fcm:test-notification 999')
-            ->expectsOutput("Benutzer mit ID 999 nicht gefunden.")
+            ->expectsOutput('Benutzer mit ID 999 nicht gefunden.')
             ->assertExitCode(1);
     }
 
@@ -47,7 +47,7 @@ class TestFcmNotificationCommandTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->artisan('fcm:test-notification ' . $user->id)
+        $this->artisan('fcm:test-notification '.$user->id)
             ->expectsOutput("Der Benutzer {$user->email} hat keine registrierten FCM-Tokens.")
             ->assertExitCode(1);
     }

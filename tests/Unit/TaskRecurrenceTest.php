@@ -10,7 +10,7 @@ class TaskRecurrenceTest extends TestCase
 {
     public function test_hourly_recurrence_preserves_time()
     {
-        $task = new Task();
+        $task = new Task;
         $task->due_at = Carbon::parse('2026-01-23 08:00:00');
         $task->recurrence_rule = ['frequency' => 'hourly', 'interval' => 12];
 
@@ -21,7 +21,7 @@ class TaskRecurrenceTest extends TestCase
 
     public function test_daily_recurrence_preserves_time()
     {
-        $task = new Task();
+        $task = new Task;
         $task->due_at = Carbon::parse('2026-01-23 08:00:00');
         $task->recurrence_rule = ['frequency' => 'daily', 'interval' => 1];
 
@@ -32,7 +32,7 @@ class TaskRecurrenceTest extends TestCase
 
     public function test_weekly_recurrence_preserves_time()
     {
-        $task = new Task();
+        $task = new Task;
         $task->due_at = Carbon::parse('2026-01-23 08:00:00');
         $task->recurrence_rule = ['frequency' => 'weekly', 'interval' => 1];
 
@@ -43,7 +43,7 @@ class TaskRecurrenceTest extends TestCase
 
     public function test_monthly_recurrence_preserves_time()
     {
-        $task = new Task();
+        $task = new Task;
         $task->due_at = Carbon::parse('2026-01-23 08:00:00');
         $task->recurrence_rule = ['frequency' => 'monthly', 'interval' => 1];
 
@@ -54,12 +54,12 @@ class TaskRecurrenceTest extends TestCase
 
     public function test_multiple_times_per_day_recurrence()
     {
-        $task = new Task();
+        $task = new Task;
         $task->due_at = Carbon::parse('2026-01-23 08:00:00');
         $task->recurrence_rule = [
             'frequency' => 'daily',
             'interval' => 1,
-            'times' => ['08:00', '10:00']
+            'times' => ['08:00', '10:00'],
         ];
 
         // 1. Completion -> should move to 10:00 same day
@@ -74,12 +74,12 @@ class TaskRecurrenceTest extends TestCase
 
     public function test_multiple_times_with_larger_interval()
     {
-        $task = new Task();
+        $task = new Task;
         $task->due_at = Carbon::parse('2026-01-23 10:00:00');
         $task->recurrence_rule = [
             'frequency' => 'daily',
             'interval' => 2, // every 2 days
-            'times' => ['08:00', '10:00']
+            'times' => ['08:00', '10:00'],
         ];
 
         // Currently at 10:00 (last time of the day)

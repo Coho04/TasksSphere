@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('recurrence_timezone')->nullable();
 
             $table->softDeletes();
-	});
+        });
     }
 
     /**

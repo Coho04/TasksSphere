@@ -40,7 +40,7 @@ class TaskReminderCommandTest extends TestCase
         Notification::assertSentTo(
             $user,
             TaskReminderNotification::class,
-            function ($notification, $channels) use ($task) {
+            function ($notification, $channels) {
                 return $channels === ['NotificationChannels\Fcm\FcmChannel'] || in_array('NotificationChannels\Fcm\FcmChannel', $channels);
             }
         );

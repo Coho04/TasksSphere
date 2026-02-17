@@ -25,13 +25,13 @@ class TaskManagerTest extends TestCase
             'user_id' => $user1->id,
             'title' => 'User 1 Task',
             'recurrence_rule' => null,
-            'is_archived' => false
+            'is_archived' => false,
         ]);
         $task2 = Task::factory()->create([
             'user_id' => $user2->id,
             'title' => 'User 2 Task',
             'recurrence_rule' => null,
-            'is_archived' => false
+            'is_archived' => false,
         ]);
 
         // Mark tasks as completed
@@ -54,7 +54,7 @@ class TaskManagerTest extends TestCase
             ->test(TaskManager::class)
             ->assertViewHas('completedCompletions', function ($completions) use ($task1, $task2) {
                 return $completions->contains('task_id', $task1->id) &&
-                       !$completions->contains('task_id', $task2->id);
+                       ! $completions->contains('task_id', $task2->id);
             });
 
         // Test as user 2
@@ -62,7 +62,7 @@ class TaskManagerTest extends TestCase
             ->test(TaskManager::class)
             ->assertViewHas('completedCompletions', function ($completions) use ($task1, $task2) {
                 return $completions->contains('task_id', $task2->id) &&
-                       !$completions->contains('task_id', $task1->id);
+                       ! $completions->contains('task_id', $task1->id);
             });
     }
 }

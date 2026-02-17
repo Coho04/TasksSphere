@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Tests\TestCase;
 
 class SchedulerTest extends TestCase

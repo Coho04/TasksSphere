@@ -26,7 +26,7 @@ class UserController extends Controller
             'language' => ['nullable', 'string', 'in:de,en'],
         ]);
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
@@ -36,7 +36,7 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'Profil aktualisiert',
-            'user' => $user->fresh()
+            'user' => $user->fresh(),
         ]);
     }
 }

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class UserTaskRelationshipTest extends TestCase
@@ -15,7 +14,7 @@ class UserTaskRelationshipTest extends TestCase
     public function test_user_can_have_tasks(): void
     {
         $user = User::factory()->create();
-        
+
         $task = $user->tasks()->create([
             'title' => 'Test Task',
             'description' => 'Description',

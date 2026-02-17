@@ -26,9 +26,9 @@ class TaskApiController extends Controller
 
         $tasks = Auth::user()->tasks()
             ->where('is_archived', false)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('completed_at')
-                      ->orWhereNotNull('recurrence_rule');
+                    ->orWhereNotNull('recurrence_rule');
             })
             ->get();
 
@@ -43,7 +43,7 @@ class TaskApiController extends Controller
     public function completed()
     {
         return \App\Models\TaskCompletion::with('task')
-            ->whereHas('task', function($query) {
+            ->whereHas('task', function ($query) {
                 $query->where('user_id', Auth::id());
             })
             ->where('is_skipped', false)
@@ -69,7 +69,7 @@ class TaskApiController extends Controller
             'notify' => 'nullable|boolean',
         ]);
 
-        if (!empty($validated['due_at']) && !empty($validated['recurrence_timezone'])) {
+        if (! empty($validated['due_at']) && ! empty($validated['recurrence_timezone'])) {
             $validated['due_at'] = \Illuminate\Support\Carbon::parse($validated['due_at'], $validated['recurrence_timezone'])
                 ->setTimezone('UTC');
         }
@@ -86,6 +86,7 @@ class TaskApiController extends Controller
     public function show(Task $task)
     {
         $this->authorize('view', $task);
+
         return $task;
     }
 
@@ -109,7 +110,7 @@ class TaskApiController extends Controller
             'is_archived' => 'boolean',
         ]);
 
-        if (!empty($validated['due_at'])) {
+        if (! empty($validated['due_at'])) {
             $timezone = $validated['recurrence_timezone'] ?? $task->recurrence_timezone;
             if ($timezone) {
                 $validated['due_at'] = \Illuminate\Support\Carbon::parse($validated['due_at'], $timezone)
@@ -118,6 +119,7 @@ class TaskApiController extends Controller
         }
 
         $task->update($validated);
+
         return $task;
     }
 
@@ -125,6 +127,7 @@ class TaskApiController extends Controller
     {
         $this->authorize('update', $task);
         $task->complete($request->input('planned_at'));
+
         return response()->json(['message' => 'Task completed', 'task' => $task->fresh()]);
     }
 
@@ -133,6 +136,7 @@ class TaskApiController extends Controller
         $this->authorize('update', $task);
         $request->validate(['planned_at' => 'required|date']);
         $task->skip($request->input('planned_at'));
+
         return response()->json(['message' => 'Occurrence skipped', 'task' => $task->fresh()]);
     }
 
@@ -140,6 +144,7 @@ class TaskApiController extends Controller
     {
         $this->authorize('delete', $task);
         $task->delete();
+
         return response()->json(['message' => 'Task deleted']);
     }
 }

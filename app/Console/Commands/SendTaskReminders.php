@@ -28,7 +28,7 @@ class SendTaskReminders extends Command
      */
     public function handle()
     {
-        Log::info("Scheduler: tasks:send-reminders command execution started.");
+        Log::info('Scheduler: tasks:send-reminders command execution started.');
 
         $now = now();
 
@@ -49,8 +49,8 @@ class SendTaskReminders extends Command
             ->with('user')
             ->get();
 
-        $this->info("Gefundene fällige Aufgaben: " . $tasks->count(). ' | ' . now());
-        Log::info("Scheduler: Found " . $tasks->count() . " due tasks to process.");
+        $this->info('Gefundene fällige Aufgaben: '.$tasks->count().' | '.now());
+        Log::info('Scheduler: Found '.$tasks->count().' due tasks to process.');
 
         foreach ($tasks as $task) {
             $user = $task->user;
@@ -58,14 +58,14 @@ class SendTaskReminders extends Command
             if ($user) {
                 $tokens = $user->routeNotificationForFcm();
 
-                if (!empty($tokens)) {
+                if (! empty($tokens)) {
                     try {
                         $user->notify(new TaskReminderNotification($task));
                         $task->update(['last_notified_at' => now()]);
                         $this->info("Benachrichtigung für Task ID {$task->id} an Benutzer {$user->email} gesendet.");
                     } catch (\Exception $e) {
-                        $this->error("Fehler beim Senden der Benachrichtigung für Task ID {$task->id}: " . $e->getMessage());
-                        Log::error("FCM Error for task {$task->id}: " . $e->getMessage());
+                        $this->error("Fehler beim Senden der Benachrichtigung für Task ID {$task->id}: ".$e->getMessage());
+                        Log::error("FCM Error for task {$task->id}: ".$e->getMessage());
                     }
                 } else {
                     // Markieren als benachrichtigt, damit wir nicht hängen bleiben,
@@ -79,6 +79,6 @@ class SendTaskReminders extends Command
             }
         }
 
-        Log::info("Scheduler: tasks:send-reminders command execution finished.");
+        Log::info('Scheduler: tasks:send-reminders command execution finished.');
     }
 }

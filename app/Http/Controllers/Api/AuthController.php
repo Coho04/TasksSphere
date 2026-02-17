@@ -4,12 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\UserDevice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -32,7 +31,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $user->createToken($request->device_name)->plainTextToken,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -84,7 +83,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $user->createToken($request->device_name)->plainTextToken,
-            'user' => $user
+            'user' => $user,
         ]);
     }
 
@@ -93,6 +92,7 @@ class AuthController extends Controller
         $accessToken = $request->user()->currentAccessToken();
 
         $accessToken->delete();
+
         return response()->json(['message' => 'Abgemeldet']);
     }
 

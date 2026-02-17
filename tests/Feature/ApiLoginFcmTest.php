@@ -22,7 +22,7 @@ class ApiLoginFcmTest extends TestCase
             'device_name' => 'mobile-app',
         ], [
             'X-FCM-Token' => 'login-token-456',
-            'X-Device-ID' => 'mobile-device-id'
+            'X-Device-ID' => 'mobile-device-id',
         ]);
 
         $response->assertStatus(200);
@@ -30,7 +30,7 @@ class ApiLoginFcmTest extends TestCase
         $this->assertDatabaseHas('user_devices', [
             'user_id' => $user->id,
             'fcm_token' => 'login-token-456',
-            'device_id' => 'mobile-device-id'
+            'device_id' => 'mobile-device-id',
         ]);
 
         $this->assertEquals('login-token-456', $user->fresh()->fcm_token);
@@ -47,7 +47,7 @@ class ApiLoginFcmTest extends TestCase
             'password' => $password,
             'device_name' => 'mobile-app',
             'fcm_token' => 'body-token-789',
-            'device_id' => 'body-device-id'
+            'device_id' => 'body-device-id',
         ]);
 
         $response->assertStatus(200);
@@ -55,7 +55,7 @@ class ApiLoginFcmTest extends TestCase
         $this->assertDatabaseHas('user_devices', [
             'user_id' => $user->id,
             'fcm_token' => 'body-token-789',
-            'device_id' => 'body-device-id'
+            'device_id' => 'body-device-id',
         ]);
 
         $this->assertEquals('body-token-789', $user->fresh()->fcm_token);

@@ -31,8 +31,9 @@ class TestFcmNotificationCommand extends Command
         $userId = $this->argument('user_id');
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             $this->error("Benutzer mit ID {$userId} nicht gefunden.");
+
             return 1;
         }
 
@@ -40,19 +41,21 @@ class TestFcmNotificationCommand extends Command
 
         if (empty($tokens)) {
             $this->warn("Der Benutzer {$user->email} hat keine registrierten FCM-Tokens.");
-            $this->info("Hinweis: Tokens werden registriert, wenn sich der Benutzer über die mobile App (WebView) anmeldet oder den Header X-FCM-Token mitsendet.");
+            $this->info('Hinweis: Tokens werden registriert, wenn sich der Benutzer über die mobile App (WebView) anmeldet oder den Header X-FCM-Token mitsendet.');
+
             return 1;
         }
 
         $this->info("Sende Test-Benachrichtigung an {$user->email}...");
-        $this->info("Anzahl der Zielgeräte: " . (is_array($tokens) ? count($tokens) : 1));
+        $this->info('Anzahl der Zielgeräte: '.(is_array($tokens) ? count($tokens) : 1));
 
         try {
-            $user->notify(new TestFcmNotification());
-            $this->info("Die Benachrichtigung wurde erfolgreich an die Warteschlange von Firebase übergeben.");
+            $user->notify(new TestFcmNotification);
+            $this->info('Die Benachrichtigung wurde erfolgreich an die Warteschlange von Firebase übergeben.');
         } catch (\Exception $e) {
-            $this->error("Fehler beim Senden der Benachrichtigung: " . $e->getMessage());
-            Log::error("FCM Test Error: " . $e->getMessage());
+            $this->error('Fehler beim Senden der Benachrichtigung: '.$e->getMessage());
+            Log::error('FCM Test Error: '.$e->getMessage());
+
             return 1;
         }
 

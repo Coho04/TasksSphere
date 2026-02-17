@@ -17,13 +17,13 @@ class FcmTokenHeaderTest extends TestCase
         $this->actingAs($user)
             ->get('/', [
                 'X-FCM-Token' => 'header-token-123',
-                'X-Device-ID' => 'header-device-id'
+                'X-Device-ID' => 'header-device-id',
             ]);
 
         $this->assertDatabaseHas('user_devices', [
             'user_id' => $user->id,
             'fcm_token' => 'header-token-123',
-            'device_id' => 'header-device-id'
+            'device_id' => 'header-device-id',
         ]);
 
         $this->assertEquals('header-token-123', $user->fresh()->fcm_token);
@@ -34,19 +34,19 @@ class FcmTokenHeaderTest extends TestCase
         $user = User::factory()->create();
         $user->devices()->create([
             'device_id' => 'header-device-id',
-            'fcm_token' => 'old-token'
+            'fcm_token' => 'old-token',
         ]);
 
         $this->actingAs($user)
             ->get('/', [
                 'X-FCM-Token' => 'new-token',
-                'X-Device-ID' => 'header-device-id'
+                'X-Device-ID' => 'header-device-id',
             ]);
 
         $this->assertDatabaseHas('user_devices', [
             'user_id' => $user->id,
             'device_id' => 'header-device-id',
-            'fcm_token' => 'new-token'
+            'fcm_token' => 'new-token',
         ]);
 
         $this->assertDatabaseCount('user_devices', 1);
@@ -56,12 +56,11 @@ class FcmTokenHeaderTest extends TestCase
     {
         $this->get('/', [
             'X-FCM-Token' => 'header-token-123',
-            'X-Device-ID' => 'header-device-id'
+            'X-Device-ID' => 'header-device-id',
         ]);
 
         $this->assertDatabaseMissing('user_devices', [
-            'fcm_token' => 'header-token-123'
+            'fcm_token' => 'header-token-123',
         ]);
     }
-
 }
