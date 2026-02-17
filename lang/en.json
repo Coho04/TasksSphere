@@ -66,5 +66,11 @@
     "So": "Sun",
     "Wochentage": "Weekdays",
     "Startet am (optional)": "Starts at (optional)",
-    "Standardmäßig heute.": "Today by default."
+    "Standardmäßig heute.": "Today by default.",
+    "Notification Preferences": "Notification Preferences",
+    "Manage how you want to receive notifications.": "Manage how you want to receive notifications.",
+    "Email Notifications": "Email Notifications",
+    "Receive notifications via email.": "Receive notifications via email.",
+    "Push Notifications": "Push Notifications",
+    "Receive push notifications on your devices.": "Receive push notifications on your devices."
 }

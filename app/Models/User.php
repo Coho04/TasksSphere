@@ -35,6 +35,8 @@ class User extends Authenticatable
         'language',
         'timezone',
         'fcm_token',
+        'notify_email',
+        'notify_push',
     ];
 
     /**
@@ -79,6 +81,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'notify_email' => 'boolean',
+            'notify_push' => 'boolean',
         ];
     }
 

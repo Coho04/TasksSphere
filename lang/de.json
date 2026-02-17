@@ -67,5 +67,11 @@
     "Aufgabe löschen": "Aufgabe löschen",
     "Soll nur dieser eine Termin oder die gesamte Serie gelöscht werden?": "Soll nur dieser eine Termin oder die gesamte Serie gelöscht werden?",
     "Nur diesen Termin": "Nur diesen Termin",
-    "Gesamte Serie": "Gesamte Serie"
+    "Gesamte Serie": "Gesamte Serie",
+    "Notification Preferences": "Benachrichtigungseinstellungen",
+    "Manage how you want to receive notifications.": "Verwalten Sie, wie Sie Benachrichtigungen erhalten möchten.",
+    "Email Notifications": "E-Mail-Benachrichtigungen",
+    "Receive notifications via email.": "Benachrichtigungen per E-Mail erhalten.",
+    "Push Notifications": "Push-Benachrichtigungen",
+    "Receive push notifications on your devices.": "Push-Benachrichtigungen auf Ihren Geräten erhalten."
 }
