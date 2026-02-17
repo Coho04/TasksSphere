@@ -2,7 +2,10 @@
 
 namespace App\Livewire;
 
-use App\Models\Task;
+use App\Models\TaskCompletion;
+use Illuminate\Contracts\View\Factory;
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 
@@ -34,12 +37,12 @@ class TaskManager extends Component
         'recurrence_timezone' => 'required|string|timezone',
     ];
 
-    public function mount()
+    public function mount(): void
     {
         $this->recurrence_timezone = Auth::user()->timezone ?: 'Europe/Berlin';
     }
 
-    public function updateTimezone($timezone)
+    public function updateTimezone($timezone): void
     {
         if (Auth::user()->timezone !== $timezone) {
             Auth::user()->update(['timezone' => $timezone]);
@@ -47,12 +50,12 @@ class TaskManager extends Component
         }
     }
 
-    public function updatedRecurrenceTimezone($value)
+    public function updatedRecurrenceTimezone($value): void
     {
         Auth::user()->update(['timezone' => $value]);
     }
 
-    public function addTime()
+    public function addTime(): void
     {
         $this->validate([
             'newTime' => 'required|regex:/^[0-2][0-9]:[0-5][0-9]$/',
@@ -65,19 +68,19 @@ class TaskManager extends Component
         $this->newTime = '';
     }
 
-    public function removeTime($index)
+    public function removeTime($index): void
     {
         unset($this->times[$index]);
         $this->times = array_values($this->times);
     }
 
-    public function render()
+    public function render(): Factory|View|\Illuminate\View\View
     {
         $allTasks = Auth::user()->tasks()
             ->where('is_archived', false)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('completed_at')
-                      ->orWhereNotNull('recurrence_rule');
+                    ->orWhereNotNull('recurrence_rule');
             })
             ->get();
 
@@ -92,7 +95,10 @@ class TaskManager extends Component
         // Sort by planned_at
         $occurrences = $occurrences->sortBy('planned_at');
 
-        $completedCompletions = \App\Models\TaskCompletion::with('task')
+        $completedCompletions = TaskCompletion::whereHas('task', function ($query) {
+            $query->where('user_id', '=', Auth::id());
+        })
+            ->with('task')
             ->where('is_skipped', false)
             ->orderBy('completed_at', 'desc')
             ->take(10)
@@ -109,13 +115,13 @@ class TaskManager extends Component
         ]);
     }
 
-    public function showCreateForm()
+    public function showCreateForm(): void
     {
         $this->cancelEdit();
         $this->showForm = true;
     }
 
-    public function createTask()
+    public function createTask(): void
     {
         $this->validate();
 
@@ -135,7 +141,7 @@ class TaskManager extends Component
         }
 
         if ($dueAt) {
-            $date = \Illuminate\Support\Carbon::parse($dueAt, $this->recurrence_timezone);
+            $date = Carbon::parse($dueAt, $this->recurrence_timezone);
             if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
                 if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
                     $limit = 7;
@@ -164,7 +170,7 @@ class TaskManager extends Component
         $this->reset(['title', 'description', 'due_at', 'frequency', 'interval', 'times', 'weekdays', 'newTime', 'showForm']);
     }
 
-    public function editTask($taskId)
+    public function editTask($taskId): void
     {
         $task = Auth::user()->tasks()->findOrFail($taskId);
         $this->editingTask = $task;
@@ -177,19 +183,19 @@ class TaskManager extends Component
             $this->interval = $task->recurrence_rule['interval'];
             $this->times = $task->recurrence_rule['times'] ?? [];
             $this->weekdays = $task->recurrence_rule['weekdays'] ?? [];
-            $this->recurrence_timezone = $task->recurrence_timezone ?? 'Europe/Berlin';
-        } else {
+        }
+        else {
             $this->frequency = 'none';
             $this->interval = 1;
             $this->times = [];
             $this->weekdays = [];
-            $this->recurrence_timezone = $task->recurrence_timezone ?? 'Europe/Berlin';
         }
+        $this->recurrence_timezone = $task->recurrence_timezone ?? 'Europe/Berlin';
 
         $this->isEditing = true;
     }
 
-    public function updateTask()
+    public function updateTask(): void
     {
         $this->validate();
 
@@ -211,7 +217,7 @@ class TaskManager extends Component
         }
 
         if ($dueAt) {
-            $date = \Illuminate\Support\Carbon::parse($dueAt, $this->recurrence_timezone);
+            $date = Carbon::parse($dueAt, $this->recurrence_timezone);
             if ($this->frequency === 'weekly' && !empty($this->weekdays)) {
                 if (!in_array($date->dayOfWeekIso, $this->weekdays)) {
                     $limit = 7;
@@ -240,18 +246,18 @@ class TaskManager extends Component
         $this->cancelEdit();
     }
 
-    public function cancelEdit()
+    public function cancelEdit(): void
     {
         $this->reset(['title', 'description', 'due_at', 'frequency', 'interval', 'times', 'weekdays', 'newTime', 'isEditing', 'editingTask', 'showForm']);
     }
 
-    public function completeTask($taskId, $plannedAt = null)
+    public function completeTask($taskId, $plannedAt = null): void
     {
         $task = Auth::user()->tasks()->findOrFail($taskId);
         $task->complete($plannedAt);
     }
 
-    public function deleteTask($taskId, $plannedAt = null)
+    public function deleteTask($taskId, $plannedAt = null): void
     {
         $task = Auth::user()->tasks()->findOrFail($taskId);
 
@@ -259,12 +265,13 @@ class TaskManager extends Component
             $this->deletionTaskId = $taskId;
             $this->deletionPlannedAt = $plannedAt;
             $this->confirmingTaskDeletion = true;
-        } else {
+        }
+        else {
             $task->delete();
         }
     }
 
-    public function deleteOccurrence()
+    public function deleteOccurrence(): void
     {
         if ($this->deletionTaskId && $this->deletionPlannedAt) {
             $task = Auth::user()->tasks()->findOrFail($this->deletionTaskId);
@@ -273,7 +280,7 @@ class TaskManager extends Component
         }
     }
 
-    public function deleteAll()
+    public function deleteAll(): void
     {
         if ($this->deletionTaskId) {
             $task = Auth::user()->tasks()->findOrFail($this->deletionTaskId);
@@ -282,7 +289,7 @@ class TaskManager extends Component
         }
     }
 
-    public function cancelDeletion()
+    public function cancelDeletion(): void
     {
         $this->reset(['confirmingTaskDeletion', 'deletionTaskId', 'deletionPlannedAt']);
     }
