@@ -38,8 +38,11 @@ class TaskReminderNotification extends Notification
      */
     public function toFcm(object $notifiable): FcmMessage
     {
+        $lang = $notifiable->language ?? 'de';
+        $title = $lang === 'en' ? 'Task due!' : 'Aufgabe fällig!';
+
         return (new FcmMessage(notification: new FcmNotification(
-            title: 'Aufgabe fällig!',
+            title: $title,
             body: $this->task->title,
         )))
             ->data(['task_id' => (string) $this->task->id]);

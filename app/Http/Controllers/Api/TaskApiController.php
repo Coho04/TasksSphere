@@ -25,6 +25,7 @@ class TaskApiController extends Controller
         $end = $request->query('end', now()->addDays(7)->endOfDay()->toDateTimeString());
 
         $tasks = Auth::user()->tasks()
+            ->with('completions')
             ->where('is_archived', false)
             ->where(function ($query) {
                 $query->whereNull('completed_at')

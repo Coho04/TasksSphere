@@ -91,6 +91,7 @@ class TaskManager extends Component
     public function render(): Factory|View|\Illuminate\View\View
     {
         $allTasks = Auth::user()->tasks()
+            ->with('completions')
             ->where('is_archived', false)
             ->where(function ($query) {
                 $query->whereNull('completed_at')
@@ -149,29 +150,7 @@ class TaskManager extends Component
             ];
         }
 
-        $dueAt = $this->due_at;
-        if (! $dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
-            $dueAt = now()->toDateTimeString();
-        }
-
-        if ($dueAt) {
-            $date = Carbon::parse($dueAt, $this->recurrence_timezone);
-            if ($this->frequency === 'weekly' && ! empty($this->weekdays)) {
-                if (! in_array($date->dayOfWeekIso, $this->weekdays)) {
-                    $limit = 7;
-                    while (! in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
-                        $date->addDay();
-                        $limit--;
-                    }
-                }
-            }
-            if ($this->frequency !== 'none' && ! empty($this->times)) {
-                sort($this->times);
-                [$hour, $minute] = explode(':', $this->times[0]);
-                $date->setTime((int) $hour, (int) $minute);
-            }
-            $dueAt = $date->setTimezone('UTC')->toDateTimeString();
-        }
+        $dueAt = $this->prepareDueAt();
 
         Auth::user()->tasks()->create([
             'title' => $this->title,
@@ -224,29 +203,7 @@ class TaskManager extends Component
             ];
         }
 
-        $dueAt = $this->due_at;
-        if (! $dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
-            $dueAt = now()->toDateTimeString();
-        }
-
-        if ($dueAt) {
-            $date = Carbon::parse($dueAt, $this->recurrence_timezone);
-            if ($this->frequency === 'weekly' && ! empty($this->weekdays)) {
-                if (! in_array($date->dayOfWeekIso, $this->weekdays)) {
-                    $limit = 7;
-                    while (! in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
-                        $date->addDay();
-                        $limit--;
-                    }
-                }
-            }
-            if ($this->frequency !== 'none' && ! empty($this->times)) {
-                sort($this->times);
-                [$hour, $minute] = explode(':', $this->times[0]);
-                $date->setTime((int) $hour, (int) $minute);
-            }
-            $dueAt = $date->setTimezone('UTC')->toDateTimeString();
-        }
+        $dueAt = $this->prepareDueAt();
 
         $task->update([
             'title' => $this->title,
@@ -299,6 +256,35 @@ class TaskManager extends Component
             $task->delete();
             $this->cancelDeletion();
         }
+    }
+
+    private function prepareDueAt(): ?string
+    {
+        $dueAt = $this->due_at;
+        if (! $dueAt && in_array($this->frequency, ['hourly', 'daily', 'weekly', 'monthly'])) {
+            $dueAt = now()->toDateTimeString();
+        }
+
+        if ($dueAt) {
+            $date = Carbon::parse($dueAt, $this->recurrence_timezone);
+            if ($this->frequency === 'weekly' && ! empty($this->weekdays)) {
+                if (! in_array($date->dayOfWeekIso, $this->weekdays)) {
+                    $limit = 7;
+                    while (! in_array($date->dayOfWeekIso, $this->weekdays) && $limit > 0) {
+                        $date->addDay();
+                        $limit--;
+                    }
+                }
+            }
+            if ($this->frequency !== 'none' && ! empty($this->times)) {
+                sort($this->times);
+                [$hour, $minute] = explode(':', $this->times[0]);
+                $date->setTime((int) $hour, (int) $minute);
+            }
+            $dueAt = $date->setTimezone('UTC')->toDateTimeString();
+        }
+
+        return $dueAt;
     }
 
     public function cancelDeletion(): void

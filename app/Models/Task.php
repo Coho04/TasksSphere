@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
 {
     /** @use HasFactory<\Database\Factories\TaskFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -118,9 +119,9 @@ class Task extends Model
         $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
         $plannedAt = \Illuminate\Support\Carbon::parse($date, $timezone)->setTimezone('UTC');
 
-        return $this->completions()
-            ->where('planned_at', $plannedAt->toDateTimeString())
-            ->exists();
+        return $this->completions->contains(function ($completion) use ($plannedAt) {
+            return $completion->planned_at->equalTo($plannedAt);
+        });
     }
 
     public function isSkippedAt($date): bool
@@ -128,10 +129,9 @@ class Task extends Model
         $timezone = $this->recurrence_timezone ?: config('app.timezone', 'UTC');
         $plannedAt = \Illuminate\Support\Carbon::parse($date, $timezone)->setTimezone('UTC');
 
-        return $this->completions()
-            ->where('planned_at', $plannedAt->toDateTimeString())
-            ->where('is_skipped', true)
-            ->exists();
+        return $this->completions->contains(function ($completion) use ($plannedAt) {
+            return $completion->planned_at->equalTo($plannedAt) && $completion->is_skipped;
+        });
     }
 
     public function complete($plannedAt = null)

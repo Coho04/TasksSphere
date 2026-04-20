@@ -37,7 +37,7 @@ class SendTaskReminders extends Command
         // und für die wir noch keine Benachrichtigung für diesen Termin gesendet haben.
         // Um es einfach zu halten, prüfen wir gegen ein (neu zu erstellendes) Feld last_notified_at.
 
-        $tasks = Task::whereNotNull('due_at')
+        $query = Task::whereNotNull('due_at')
             ->where('due_at', '<=', $now)
             ->where('is_active', true)
             ->where('is_archived', false)
@@ -46,38 +46,44 @@ class SendTaskReminders extends Command
                 $query->whereNull('last_notified_at')
                     ->orWhereColumn('last_notified_at', '<', 'due_at');
             })
-            ->with('user')
-            ->get();
+            ->with('user');
 
-        $this->info('Gefundene fällige Aufgaben: '.$tasks->count().' | '.now());
-        Log::info('Scheduler: Found '.$tasks->count().' due tasks to process.');
+        $this->info('Gefundene fällige Aufgaben: '.$query->count().' | '.now());
+        Log::info('Scheduler: Found '.$query->count().' due tasks to process.');
 
-        foreach ($tasks as $task) {
-            $user = $task->user;
+        $query->chunk(100, function ($tasks) {
+            foreach ($tasks as $task) {
+                $user = $task->user;
 
-            if ($user) {
-                $tokens = $user->routeNotificationForFcm();
-
-                if (! empty($tokens)) {
-                    try {
-                        $user->notify(new TaskReminderNotification($task));
+                if ($user) {
+                    if (! $user->notify_push) {
                         $task->update(['last_notified_at' => now()]);
-                        $this->info("Benachrichtigung für Task ID {$task->id} an Benutzer {$user->email} gesendet.");
-                    } catch (\Exception $e) {
-                        $this->error("Fehler beim Senden der Benachrichtigung für Task ID {$task->id}: ".$e->getMessage());
-                        Log::error("FCM Error for task {$task->id}: ".$e->getMessage());
+                        continue;
+                    }
+
+                    $tokens = $user->routeNotificationForFcm();
+
+                    if (! empty($tokens)) {
+                        try {
+                            $user->notify(new TaskReminderNotification($task));
+                            $task->update(['last_notified_at' => now()]);
+                            $this->info("Benachrichtigung für Task ID {$task->id} an Benutzer {$user->email} gesendet.");
+                        } catch (\Exception $e) {
+                            $this->error("Fehler beim Senden der Benachrichtigung für Task ID {$task->id}: ".$e->getMessage());
+                            Log::error("FCM Error for task {$task->id}: ".$e->getMessage());
+                        }
+                    } else {
+                        // Markieren als benachrichtigt, damit wir nicht hängen bleiben,
+                        // auch wenn aktuell kein Token da ist.
+                        $task->update(['last_notified_at' => now()]);
+                        $this->warn("Kein FCM Token für Benutzer {$user->email} (Task ID {$task->id}) gefunden.");
                     }
                 } else {
-                    // Markieren als benachrichtigt, damit wir nicht hängen bleiben,
-                    // auch wenn aktuell kein Token da ist.
                     $task->update(['last_notified_at' => now()]);
-                    $this->warn("Kein FCM Token für Benutzer {$user->email} (Task ID {$task->id}) gefunden.");
+                    $this->warn("Kein Benutzer für Task ID {$task->id} gefunden.");
                 }
-            } else {
-                $task->update(['last_notified_at' => now()]);
-                $this->warn("Kein Benutzer für Task ID {$task->id} gefunden.");
             }
-        }
+        });
 
         Log::info('Scheduler: tasks:send-reminders command execution finished.');
     }
