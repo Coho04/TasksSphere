@@ -14,6 +14,7 @@ class Task extends Model
 
     protected $fillable = [
         'user_id',
+        'task_list_id',
         'title',
         'description',
         'due_at',
@@ -42,6 +43,11 @@ class Task extends Model
     public function completions()
     {
         return $this->hasMany(TaskCompletion::class);
+    }
+
+    public function taskList()
+    {
+        return $this->belongsTo(TaskList::class);
     }
 
     protected function serializeDate(\DateTimeInterface $date)
